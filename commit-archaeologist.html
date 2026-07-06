@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Commit Archaeologist — dig through your git history</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --soil-0: #EFE7D8;   /* surface, lightest */
+    --soil-1: #C9B594;
+    --soil-2: #9C8464;
+    --soil-3: #6E5A42;
+    --soil-4: #453728;   /* bedrock, darkest */
+    --ink: #2A2117;
+    --paper: #F7F2E9;
+    --patina: #6E9284;   /* accent — aged copper/patina green */
+    --patina-dim: #56766A;
+    --rule: rgba(42,33,23,0.14);
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'IBM Plex Sans', sans-serif;
+    --display: 'Fraunces', serif;
+  }
+
+  * { box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    * { animation: none !important; transition: none !important; }
+  }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    line-height: 1.55;
+  }
+
+  a { color: var(--patina-dim); }
+  a:focus-visible, button:focus-visible {
+    outline: 2px solid var(--patina-dim);
+    outline-offset: 3px;
+  }
+
+  .wrap {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 0 32px;
+  }
+
+  /* ---------- Nav ---------- */
+  nav {
+    border-bottom: 1px solid var(--rule);
+    background: var(--paper);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  .nav-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 0;
+  }
+  .brand {
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: 1.15rem;
+    letter-spacing: 0.01em;
+  }
+  .nav-links {
+    display: flex;
+    gap: 28px;
+    font-size: 0.92rem;
+  }
+  .nav-links a {
+    text-decoration: none;
+    color: var(--ink);
+    opacity: 0.75;
+  }
+  .nav-links a:hover { opacity: 1; }
+
+  /* ---------- Hero ---------- */
+  .hero {
+    padding: 88px 0 40px;
+    display: grid;
+    grid-template-columns: 1.05fr 0.95fr;
+    gap: 56px;
+    align-items: center;
+  }
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--patina-dim);
+    margin-bottom: 18px;
+  }
+  h1 {
+    font-family: var(--display);
+    font-weight: 500;
+    font-size: 3.05rem;
+    line-height: 1.06;
+    margin: 0 0 22px;
+    letter-spacing: -0.01em;
+  }
+  .hero p.lede {
+    font-size: 1.12rem;
+    max-width: 46ch;
+    color: rgba(42,33,23,0.82);
+    margin: 0 0 32px;
+  }
+  .cta-row { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; }
+  .btn {
+    display: inline-block;
+    padding: 13px 24px;
+    border-radius: 3px;
+    font-weight: 500;
+    font-size: 0.95rem;
+    text-decoration: none;
+    border: 1px solid transparent;
+  }
+  .btn-primary {
+    background: var(--ink);
+    color: var(--paper);
+  }
+  .btn-primary:hover { background: #3a2e20; }
+  .btn-secondary {
+    color: var(--ink);
+    border-color: rgba(42,33,23,0.3);
+  }
+  .btn-secondary:hover { border-color: var(--ink); }
+
+  .install {
+    margin-top: 22px;
+    font-family: var(--mono);
+    font-size: 0.88rem;
+    background: var(--ink);
+    color: var(--soil-0);
+    padding: 14px 18px;
+    border-radius: 4px;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .install .prompt { color: var(--patina); }
+
+  /* ---------- Stratigraphy diagram (signature element) ---------- */
+  .strata {
+    position: relative;
+  }
+  .strata svg { width: 100%; height: auto; display: block; }
+  .strata-caption {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: rgba(42,33,23,0.55);
+    text-align: center;
+    margin-top: 10px;
+    letter-spacing: 0.04em;
+  }
+
+  /* ---------- Section shell ---------- */
+  section { padding: 64px 0; }
+  .section-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--rule);
+    padding-bottom: 18px;
+    margin-bottom: 40px;
+  }
+  .section-head h2 {
+    font-family: var(--display);
+    font-weight: 500;
+    font-size: 1.7rem;
+    margin: 0;
+  }
+  .section-head span {
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    color: rgba(42,33,23,0.5);
+  }
+
+  /* ---------- Layers (features) ---------- */
+  .layers {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0;
+    border-top: 1px solid var(--rule);
+  }
+  .layer-row {
+    display: grid;
+    grid-template-columns: 220px 1fr 1fr;
+    gap: 32px;
+    padding: 30px 0;
+    border-bottom: 1px solid var(--rule);
+    align-items: start;
+  }
+  .layer-tag {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .layer-chip {
+    width: 30px;
+    height: 30px;
+    border-radius: 3px;
+    flex-shrink: 0;
+  }
+  .layer-tag .label {
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    color: rgba(42,33,23,0.6);
+  }
+  .layer-title {
+    font-family: var(--display);
+    font-weight: 500;
+    font-size: 1.2rem;
+    margin: 0 0 8px;
+  }
+  .layer-desc {
+    color: rgba(42,33,23,0.78);
+    font-size: 0.96rem;
+    margin: 0;
+  }
+  .layer-sample {
+    font-family: var(--mono);
+    font-size: 0.82rem;
+    background: rgba(42,33,23,0.05);
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    padding: 14px 16px;
+    color: var(--ink);
+    white-space: pre-wrap;
+  }
+
+  /* ---------- Usage ---------- */
+  .usage {
+    background: var(--ink);
+    color: var(--soil-0);
+    border-radius: 6px;
+    padding: 40px;
+  }
+  .usage h2 { color: var(--paper); }
+  .usage .section-head { border-bottom-color: rgba(239,231,216,0.16); }
+  .usage .section-head span { color: rgba(239,231,216,0.5); }
+  .terminal {
+    font-family: var(--mono);
+    font-size: 0.88rem;
+    line-height: 1.7;
+  }
+  .terminal .cmd::before {
+    content: "$ ";
+    color: var(--patina);
+  }
+  .terminal .out { color: rgba(239,231,216,0.68); padding-left: 18px; }
+  .terminal .cmd { margin-top: 16px; }
+  .terminal .cmd:first-child { margin-top: 0; }
+
+  /* ---------- Footer ---------- */
+  footer {
+    border-top: 1px solid var(--rule);
+    padding: 32px 0 48px;
+    font-size: 0.85rem;
+    color: rgba(42,33,23,0.6);
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  footer a { text-decoration: none; }
+
+  @media (max-width: 860px) {
+    .hero { grid-template-columns: 1fr; gap: 40px; padding-top: 56px; }
+    h1 { font-size: 2.3rem; }
+    .layer-row { grid-template-columns: 1fr; gap: 14px; }
+    .layer-tag { padding-bottom: 4px; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap nav-inner">
+    <div class="brand">Commit Archaeologist</div>
+    <div class="nav-links">
+      <a href="#layers">What it finds</a>
+      <a href="#usage">Usage</a>
+      <a href="#install">Install</a>
+    </div>
+  </div>
+</nav>
+
+<header class="wrap hero">
+  <div>
+    <div class="eyebrow">A command-line tool for git history</div>
+    <h1>Every commit leaves a layer.</h1>
+    <p class="lede">
+      Point it at any repository and it excavates the record: who wrote what,
+      which files keep getting rewritten, when the work actually happens,
+      and which commit messages didn't leave much for future you to go on.
+    </p>
+    <div class="cta-row">
+      <a class="btn btn-primary" href="#install">Get started</a>
+      <a class="btn btn-secondary" href="#layers">See what it reports</a>
+    </div>
+    <div class="install">
+      <span class="prompt">$</span> pip install commit-archaeologist
+    </div>
+  </div>
+
+  <div class="strata">
+    <svg viewBox="0 0 480 420" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Cross-section diagram of a dig site, illustrating layers of git history from recent commits at the surface down to the first commit at bedrock.">
+      <rect x="0" y="0" width="480" height="60" fill="var(--soil-0)"/>
+      <rect x="0" y="60" width="480" height="75" fill="var(--soil-1)"/>
+      <rect x="0" y="135" width="480" height="80" fill="var(--soil-2)"/>
+      <rect x="0" y="215" width="480" height="90" fill="var(--soil-3)"/>
+      <rect x="0" y="305" width="480" height="115" fill="var(--soil-4)"/>
+
+      <!-- irregular strata edges -->
+      <path d="M0,60 Q120,50 240,63 T480,58 L480,60 L0,60 Z" fill="var(--soil-1)"/>
+      <path d="M0,135 Q140,122 260,138 T480,132 L480,135 L0,135 Z" fill="var(--soil-2)"/>
+      <path d="M0,215 Q100,205 240,218 T480,210 L480,215 L0,215 Z" fill="var(--soil-3)"/>
+      <path d="M0,305 Q150,292 300,308 T480,300 L480,305 L0,305 Z" fill="var(--soil-4)"/>
+
+      <!-- depth markers -->
+      <g font-family="IBM Plex Mono, monospace" font-size="12" fill="var(--ink)">
+        <text x="16" y="34" opacity="0.7">SURFACE — commit rhythm</text>
+        <text x="16" y="102" fill="#F7F2E9" opacity="0.85">LAYER II — contributor strata</text>
+        <text x="16" y="180" fill="#F7F2E9" opacity="0.9">LAYER III — hotspot deposits</text>
+        <text x="16" y="264" fill="#F7F2E9" opacity="0.92">LAYER IV — message fossils</text>
+        <text x="16" y="366" fill="#EFE7D8" opacity="0.9">BEDROCK — first commit</text>
+      </g>
+
+      <!-- excavation marks -->
+      <line x1="330" y1="0" x2="330" y2="420" stroke="var(--patina)" stroke-width="1.5" stroke-dasharray="3 5" opacity="0.6"/>
+      <circle cx="330" cy="160" r="3.5" fill="var(--patina)"/>
+      <circle cx="330" cy="250" r="3.5" fill="var(--patina)"/>
+    </svg>
+    <div class="strata-caption">a repository read as sediment — recent work at the surface, the first commit at bedrock</div>
+  </div>
+</header>
+
+<section id="layers" class="wrap">
+  <div class="section-head">
+    <h2>What gets uncovered</h2>
+    <span>five layers, one dig</span>
+  </div>
+
+  <div class="layers">
+    <div class="layer-row">
+      <div class="layer-tag">
+        <div class="layer-chip" style="background: var(--soil-0); border: 1px solid var(--rule);"></div>
+        <span class="label">SURFACE</span>
+      </div>
+      <div>
+        <h3 class="layer-title">Commit rhythm</h3>
+        <p class="layer-desc">Which weekdays and hours the work actually happens, so the pattern of a project's activity is visible at a glance — not just its total volume.</p>
+      </div>
+      <div class="layer-sample">Monday    ████████████ 24
+Tuesday   ██████████████████ 31
+Wednesday ██████ 11</div>
+    </div>
+
+    <div class="layer-row">
+      <div class="layer-tag">
+        <div class="layer-chip" style="background: var(--soil-1);"></div>
+        <span class="label">LAYER II</span>
+      </div>
+      <div>
+        <h3 class="layer-title">Contributor strata</h3>
+        <p class="layer-desc">Commits, insertions, deletions, and files touched, broken down per author — who carried a given stretch of the project's history.</p>
+      </div>
+      <div class="layer-sample">rynix27   142 commits  +8,410 / -3,220
+a.dev      37 commits  +1,105 / -640</div>
+    </div>
+
+    <div class="layer-row">
+      <div class="layer-tag">
+        <div class="layer-chip" style="background: var(--soil-2);"></div>
+        <span class="label">LAYER III</span>
+      </div>
+      <div>
+        <h3 class="layer-title">Hotspot deposits</h3>
+        <p class="layer-desc">Files that get rewritten again and again. Usually core logic, a shared utility, or a spot that keeps causing trouble.</p>
+      </div>
+      <div class="layer-sample">src/analyzer.py     38 commits  +612/-201
+src/report.py       21 commits  +340/-98</div>
+      </div>
+
+    <div class="layer-row">
+      <div class="layer-tag">
+        <div class="layer-chip" style="background: var(--soil-3);"></div>
+        <span class="label">LAYER IV</span>
+      </div>
+      <div>
+        <h3 class="layer-title">Message fossils</h3>
+        <p class="layer-desc">Commit messages preserved exactly as they were written — including the ones that didn't leave much for anyone to go on later.</p>
+      </div>
+      <div class="layer-sample">a1b2c3d  "fix"        2025-11-02
+9f8e7d6  "wip"         2025-11-04</div>
+    </div>
+
+    <div class="layer-row">
+      <div class="layer-tag">
+        <div class="layer-chip" style="background: var(--soil-4);"></div>
+        <span class="label">BEDROCK</span>
+      </div>
+      <div>
+        <h3 class="layer-title">Origin point</h3>
+        <p class="layer-desc">The date range and total commit count anchor everything else — the span of time a repository's story actually covers.</p>
+      </div>
+      <div class="layer-sample">214 commits
+2024-02-11 → 2026-06-30</div>
+    </div>
+  </div>
+</section>
+
+<section id="usage" class="wrap">
+  <div class="usage">
+    <div class="section-head">
+      <h2>Usage</h2>
+      <span>runs against any local repository</span>
+    </div>
+    <div class="terminal">
+      <div class="cmd">commit-archaeologist</div>
+      <div class="out">analyzes the current directory</div>
+
+      <div class="cmd">commit-archaeologist ./my-project --since 2025-01-01</div>
+      <div class="out">limits the dig to commits after a given date</div>
+
+      <div class="cmd">commit-archaeologist ./my-project --top 20 --export report.md</div>
+      <div class="out">shows the top 20 entries per list and writes a Markdown report to disk</div>
+    </div>
+  </div>
+</section>
+
+<section id="install" class="wrap">
+  <div class="section-head">
+    <h2>Install</h2>
+    <span>Python 3.9+</span>
+  </div>
+  <div class="terminal" style="color: var(--ink);">
+    <div class="cmd" style="color: var(--ink);"><span style="font-family: var(--mono); color: var(--patina-dim);">$</span> pip install commit-archaeologist</div>
+  </div>
+</section>
+
+<footer class="wrap">
+  <div>Commit Archaeologist — a small tool for reading a repository's history.</div>
+  <div><a href="#">Source on GitHub</a></div>
+</footer>
+
+</body>
+</html>
