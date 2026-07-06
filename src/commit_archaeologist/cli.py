@@ -33,11 +33,14 @@ def main(repo_path: str, since: str | None, max_commits: int | None, top_n: int,
     """
     console = Console()
 
-    try:
+   try:
         with console.status("[bold cyan]Digging through commit history..."):
             result = analyze_repo(repo_path, since=since, max_commits=max_commits)
     except ValueError as e:
         console.print(f"[bold red]Error:[/bold red] {e}")
+        sys.exit(1)
+    except Exception as e:
+        console.print(f"[bold red]Unexpected error:[/bold red] {e}")
         sys.exit(1)
 
     render_terminal_report(result, console=console, top_n=top_n)
