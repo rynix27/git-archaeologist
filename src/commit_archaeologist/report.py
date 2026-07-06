@@ -126,7 +126,7 @@ def render_terminal_report(result: AnalysisResult, console: Console | None = Non
     console.print(table)
 
     console.print("\n[bold]Commit Rhythm[/bold]")
-    max_count = max(result.weekday_counts.values()) if result.weekday_counts else 1
+  max_count = max(result.weekday_counts.values()) if result.weekday_counts else 1
     for day in WEEKDAY_ORDER:
         count = result.weekday_counts.get(day, 0)
         bar_len = int((count / max_count) * 30) if max_count else 0
@@ -180,7 +180,7 @@ def render_markdown_report(result: AnalysisResult, top_n: int = 10) -> str:
         )
 
     lines += ["", "## Commit Rhythm", ""]
-    max_count = max(result.weekday_counts.values()) if result.weekday_counts else 1
+ max_count = max(result.weekday_counts.values()) if result.weekday_counts else 1
     for day in WEEKDAY_ORDER:
         count = result.weekday_counts.get(day, 0)
         bar_len = int((count / max_count) * 30) if max_count else 0
