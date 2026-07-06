@@ -174,10 +174,11 @@ def analyze_repo(
             astat.first_commit = dt
         if astat.last_commit is None or dt > astat.last_commit:
             astat.last_commit = dt
-
-        try:
+try:
             stats = commit.stats
-        except Exception:
+        except (ValueError, UnicodeDecodeError) as e:
+            # Some commits (e.g. certain merges, or bad encodings) can't produce stats.
+            # Skip just this commit's file/insertion data, not the whole analysis.
             continue
 
         astat.insertions += stats.total.get("insertions", 0)
