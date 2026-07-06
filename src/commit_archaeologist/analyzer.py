@@ -74,7 +74,7 @@ class AuthorStat:
 class AnalysisResult:
     repo_path: str
     total_commits: int = 0
-    date_range: tuple = None
+ date_range: Optional[tuple] = None
     file_stats: dict = field(default_factory=dict)
     author_stats: dict = field(default_factory=dict)
     weekday_counts: Counter = field(default_factory=Counter)
