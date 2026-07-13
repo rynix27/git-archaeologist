@@ -71,12 +71,6 @@ tallied per commit timestamp, and streak/gap detection works off the set of uniq
 with at least one commit. None of this touches the network or requires any external service —
 it's a pure, local analysis of `.git`.
 
-## Development
-
-```bash
-pip install -r requirements.txt pytest
-pytest tests/ -v
-```
 
 ## Ideas for extending this
 
