@@ -54,7 +54,6 @@ def test_lazy_message_detection(sample_repo):
     assert "wip" in lazy
     assert "Initial commit" not in lazy
 
-
 def test_empty_repo(tmp_path):
     repo_dir = tmp_path / "empty"
     repo_dir.mkdir()
