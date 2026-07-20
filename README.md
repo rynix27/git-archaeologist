@@ -79,7 +79,3 @@ it's a pure, local analysis of `.git`.
 - Detect "bus factor" — files owned almost entirely by one author who could leave
 - Blame-based hotspot detection (which *lines*, not just files, are most contested)
 - GitHub Action that posts a weekly digest as a repo comment
-
-## License
-
-MIT — see [LICENSE](LICENSE).
